@@ -115,7 +115,7 @@ def main(argv):
             printUsage()
             sys.exit()
         elif opt in ("-d", "--diam"):
-            diameter = int(arg)
+            diameter = float(arg)
 
     header = "$fa = 5;"  # minimum face angle
     header += "$fs = 0.1;"  # minimum face size
