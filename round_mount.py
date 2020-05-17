@@ -7,10 +7,10 @@ Created on 16.05.2020
 import sys
 import getopt
 import numpy
+import os
 from solid import scad_render_to_file, translate, rotate, cylinder, cube, linear_extrude, text
 
 from base import base
-from file_tools import safe_mkdir
 from helpers import rounded_plate, cyl_arc, hexagon
 from render_stl import render_scad_dir_to_stl_dir
 
@@ -99,14 +99,19 @@ def round_mount_light(inner_diam=17.9, ring_thick=3, opening_angle=30, stop_inne
 
     return mount
 
+
 def printUsage():
-    print('round_mount.py [-d <value> | --diam=<value>]; value in [mm]')
+    print('round_mount.py [-d <value> | --diam=<value>] [-s | --stopper] ')
+    print('value in [mm]')
+    print('-s if the mount should have a stopper')
+
 
 def main(argv):
     inputfile = ''
     outputfile = ''
+    stopper = False
     try:
-        opts, args = getopt.getopt(argv, "hd:", ["diam="])
+        opts, args = getopt.getopt(argv, "hsd:", ["diam="])
     except getopt.GetoptError:
         printUsage()
         sys.exit(2)
@@ -116,14 +121,16 @@ def main(argv):
             sys.exit()
         elif opt in ("-d", "--diam"):
             diameter = float(arg)
+        elif opt in ("-s", "--stopper"):
+            stopper = True
 
     header = "$fa = 5;"  # minimum face angle
     header += "$fs = 0.1;"  # minimum face size
 
     scad_path = f"scad/custom/{str(diameter)}mm/"
     stl_path = f"stl/custom/{str(diameter)}mm/"
-    safe_mkdir(scad_path)
-    safe_mkdir(stl_path)
+    os.makedirs(scad_path, exist_ok=True)
+    os.makedirs(stl_path, exist_ok=True)
 
     # scad_render_to_file(round_mount_light(20, opening_angle=None, stop_inner_diam=19),
     #                     scad_path + "objective_mount_edmund4x_simple.scad", file_header=header)
@@ -137,9 +144,19 @@ def main(argv):
     # scad_render_to_file(round_mount_light(
     #     5, opening_angle=None), scad_path + "round_5mm_LED.scad", file_header=header)
 
-    # with stop - lenses
-    scad_render_to_file(round_mount_light(diameter, opening_angle=None, stop_inner_diam=diameter-2),
-                            scad_path + "lens mount_d{:.1f}.scad".format(diameter), file_header=header)
+    outputFilename = scad_path + "lens mount_d{:.1f}.scad".format(diameter)
+    
+    try:
+        os.remove(outputFilename, )
+    except OSError:
+        pass
+
+    if(stopper):
+        scad_render_to_file(round_mount_light(diameter, opening_angle=None, stop_inner_diam=diameter-2),
+                            outputFilename, file_header=header)
+    else:
+        scad_render_to_file(round_mount_light(diameter, opening_angle=None),
+                            outputFilename, file_header=header)
 
     # without stop - lasers
     # for d in (12, 10):
